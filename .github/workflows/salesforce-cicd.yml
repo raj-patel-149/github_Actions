@@ -161,7 +161,12 @@ jobs:
       - name: Authenticate with Salesforce (QA)
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
-          sfdx auth:jwt:grant --clientid ${{ secrets.SF_CLIENT_ID }} --jwtkeyfile server.key --username ${{ secrets.SF_USERNAME_QA }} --setalias QA --instanceurl https://login.salesforce.com
+          sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.SF_USERNAME_QA }} \
+            --alias QA \
+            --instance-url https://login.salesforce.com
 
       # Step 4: Validate deployment and run all Apex tests 1
       - name: Validate Deployment & Run Tests
@@ -185,7 +190,7 @@ jobs:
   deploy-to-qa:
     name: Deploy to QA
     runs-on: ubuntu-latest
-    needs: code-checks
+    needs: test-coverage
     if: github.event_name == 'push'
 
     steps:
@@ -206,7 +211,12 @@ jobs:
       - name: Authenticate with Salesforce (QA)
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
-          sfdx auth:jwt:grant --clientid ${{ secrets.SF_CLIENT_ID }} --jwtkeyfile server.key --username ${{ secrets.SF_USERNAME_QA }} --setalias QA --instanceurl https://login.salesforce.com
+          sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.SF_USERNAME_QA }} \
+            --alias QA \
+            --instance-url https://login.salesforce.com
 
       # Step 4: Deploy the code to QA
       - name: Deploy Code to QA
