@@ -96,10 +96,10 @@ jobs:
             --test-level RunAllTestsInOrg \
             --target-org QA \
             --wait 10 \
-            --ignore-warnings \
-            --ignore-conflicts \
-            --force-overwrite \
-            --json
+      #        --ignore-warnings \
+      #        --ignore-conflicts \
+      #        --force-overwrite \
+      #        --json
 
       - name: Deploy Code to QA
         run: |
@@ -107,6 +107,6 @@ jobs:
             --source-dir force-app \
             --target-org QA \
             --wait 10 \
-            --ignore-conflicts \
-            --force-overwrite \
-            --json
+    #        --ignore-conflicts \
+    #        --force-overwrite \
+    #       --json
