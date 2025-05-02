@@ -1,30 +1,30 @@
-import { defineConfig } from "eslint/config";
+import js from "@eslint/js";
 import pluginReact from "eslint-plugin-react";
 import globals from "globals";
-import js from "@eslint/js";
 
-export default defineConfig([
-  {
-    files: ["**/*.{js,mjs,cjs,jsx}"],
-    plugins: { js },
-    extends: ["js/recommended"]
-  },
+export default [
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: "module",
       globals: {
         ...globals.browser,
-        require: "readonly", // Declare 'require' as a global variable
-        module: "readonly" // Declare 'module' as a global variable
+        require: "readonly",
+        module: "readonly"
       }
-    }
-  },
-  pluginReact.configs.flat.recommended,
-  {
+    },
+    plugins: {
+      react: pluginReact
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...pluginReact.configs.recommended.rules
+    },
     settings: {
       react: {
-        version: "detect" // Automatically detect React version
+        version: "detect"
       }
     }
   }
-]);
+];
