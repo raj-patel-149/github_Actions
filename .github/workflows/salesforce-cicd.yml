@@ -168,7 +168,7 @@ jobs:
             --alias QA \
             --instance-url https://login.salesforce.com
 
-      # Step 4: Validate deployment and run all Apex tests
+      # Step 4: Validate deployment and run all Apex tests 1
       - name: Validate Deployment & Run Tests
         run: |
           sf project deploy validate \
