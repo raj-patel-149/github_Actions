@@ -128,7 +128,7 @@ jobs:
         run: |
           npm install -g sonarqube-scanner
           sonar-scanner \
-            -Dsonar.projectKey=raj-patel-149_salesForce \
+            -Dsonar.projectKey=raj-patel-149_github_Actions \
             -Dsonar.organization=raj-patel-149 \
             -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
