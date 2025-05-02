@@ -132,7 +132,7 @@ jobs:
             -Dsonar.organization=raj-patel-149 \
             -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${SONAR_TOKEN}
+            -Dsonar.token=${SONAR_TOKEN}
 
   ####################################
   # Job 2: Apex Test Coverage
