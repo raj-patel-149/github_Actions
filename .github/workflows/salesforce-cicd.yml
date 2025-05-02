@@ -141,7 +141,7 @@ jobs:
     name: Apex Test Coverage
     runs-on: ubuntu-latest
     needs: code-checks
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'push'
 
     steps:
       # Step 1: Checkout your repo
@@ -191,7 +191,7 @@ jobs:
     name: Deploy to QA
     runs-on: ubuntu-latest
     needs: test-coverage
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'push'
 
     steps:
       # Step 1: Checkout your code again
