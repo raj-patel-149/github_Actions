@@ -20,9 +20,7 @@ export default [
       "@lwc/lwc": pluginLwc
     },
     rules: {
-      ...js.configs.recommended.rules,
-      ...pluginReact.configs.recommended.rules,
-      ...pluginLwc.configs.recommended.rules
+      ...js.configs.recommended.rules
     },
     settings: {
       react: {
