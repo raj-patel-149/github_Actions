@@ -1,3 +1,5 @@
-import { LightningElement } from 'lwc';
+import { LightningElement } from "lwc";
 
-export default class Harsh extends LightningElement {}
+export default class Harsh extends LightningElement {
+  name = "Harsh";
+}
