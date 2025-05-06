@@ -11,6 +11,7 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
+        ...globals.jest, // 👈 Add this line
         require: "readonly",
         module: "readonly"
       }
@@ -21,8 +22,8 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      "react/react-in-jsx-scope": "off", // Exclude unnecessary rules for LWC React
-      "react/prop-types": "off" // Disable prop-types rule for LWC, which is irrelevant here
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off"
     },
     settings: {
       react: {
