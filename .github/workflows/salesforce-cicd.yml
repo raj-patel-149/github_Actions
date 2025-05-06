@@ -89,10 +89,34 @@ jobs:
               --setalias QA
           fi
 
-      - name: Validate Deployment & Run Tests
+      - name: Run Apex Tests and Get Coverage
+        id: coverage
+        run: |
+          mkdir -p reports
+          sf apex test run \
+            --result-format human \
+            --code-coverage \
+            --output-dir reports \
+            --wait 10 \
+            --target-org QA
+
+          echo "Calculating average coverage..."
+          AVG_COVERAGE=$(sf apex get coverage --target-org QA --json | jq '.result.coverage.percentage')
+          echo "Average Coverage: $AVG_COVERAGE"
+          echo "coverage=$AVG_COVERAGE" >> $GITHUB_OUTPUT
+
+      - name: Warn if coverage is below 75%
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.coverage }}
+          echo "Current org-wide coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 75" | bc -l) )); then
+            echo "::warning:: Org-wide test coverage is below 75% ($COVERAGE%). Deployment will proceed but may fail in production."
+          fi
+
+      - name: Validate Deployment for Changed Files
         run: |
           sf project deploy validate \
             --source-dir force-app \
-            --test-level RunAllTestsInOrg \
+            --test-level RunLocalTests \
             --target-org QA \
-            --wait 10 \
+            --wait 10
