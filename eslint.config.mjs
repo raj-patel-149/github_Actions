@@ -4,6 +4,7 @@ import pluginLwc from "@lwc/eslint-plugin-lwc";
 import globals from "globals";
 
 export default [
+  js.configs.recommended,
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -17,7 +18,7 @@ export default [
     },
     plugins: {
       react: pluginReact,
-      "@lwc/lwc": pluginLwc
+      lwc: pluginLwc
     },
     rules: {
       ...js.configs.recommended.rules
@@ -27,5 +28,7 @@ export default [
         version: "detect"
       }
     }
-  }
+  },
+  pluginReact.configs.recommended,
+  pluginLwc.configs.recommended
 ];
