@@ -4,7 +4,6 @@ import pluginLwc from "@lwc/eslint-plugin-lwc";
 import globals from "globals";
 
 export default [
-  js.configs.recommended,
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -21,14 +20,14 @@ export default [
       lwc: pluginLwc
     },
     rules: {
-      ...js.configs.recommended.rules
+      ...js.configs.recommended.rules,
+      "react/react-in-jsx-scope": "off", // Exclude unnecessary rules for LWC React
+      "react/prop-types": "off" // Disable prop-types rule for LWC, which is irrelevant here
     },
     settings: {
       react: {
         version: "detect"
       }
     }
-  },
-  pluginReact.configs.recommended,
-  pluginLwc.configs.recommended
+  }
 ];
