@@ -11,18 +11,19 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
+        ...globals.jest, // 👈 Add this line
         require: "readonly",
         module: "readonly"
       }
     },
     plugins: {
       react: pluginReact,
-      "@lwc/lwc": pluginLwc
+      lwc: pluginLwc
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...pluginReact.configs.recommended.rules,
-      ...pluginLwc.configs.recommended.rules
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off"
     },
     settings: {
       react: {
