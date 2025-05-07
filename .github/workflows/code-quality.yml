@@ -1,0 +1,46 @@
+name: Salesforce CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  ####################################
+  # Job 1: Code Quality Checks
+  ####################################
+  code-checks:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        run: npx eslint .
+
+      - name: Run PMD for Apex
+        run: |
+          wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
+          unzip pmd-bin-6.55.0.zip
+          ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R category/apex/design.xml -f text
+
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          npm install -g sonarqube-scanner
+          sonar-scanner \
+            -Dsonar.projectKey=raj-patel-149_github_Actions \
+            -Dsonar.organization=raj-patel-149 \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${SONAR_TOKEN}

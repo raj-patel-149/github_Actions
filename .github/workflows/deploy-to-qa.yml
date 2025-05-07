@@ -1,0 +1,48 @@
+name: Deploy to Salesforce QA
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-to-qa:
+    name: Deploy to Salesforce QA
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli
+          sf --version || true
+
+      - name: Create JWT Key File
+        run: echo "${{ secrets.SF_JWT_KEY }}" > server.key
+
+      - name: Authenticate to Salesforce
+        run: |
+          echo "Logging in with JWT..."
+          if ! sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.SF_USERNAME_QA }} \
+            --alias QA \
+            --instance-url https://login.salesforce.com; then
+            echo "sf CLI failed, falling back to sfdx..."
+            sfdx auth:jwt:grant \
+              --clientid ${{ secrets.SF_CLIENT_ID }} \
+              --jwtkeyfile server.key \
+              --username ${{ secrets.SF_USERNAME_QA }} \
+              --instanceurl https://login.salesforce.com \
+              --setalias QA
+          fi
+
+      - name: Deploy to Salesforce (no tests)
+        run: |
+          sf project deploy start \
+            --source-dir force-app \
+            --target-org QA \
+            --ignore-conflicts \
+            --wait 10
