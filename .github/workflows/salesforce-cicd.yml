@@ -95,7 +95,7 @@ jobs:
             --target-org QA \
             --ignore-conflicts \
             --wait 10 \
-            --no-test-run
+
       # - name: Run Apex Tests and Get Coverage
       #   id: coverage
       #   run: |
