@@ -88,18 +88,17 @@ jobs:
           git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.txt || true
           cat changed-files.txt
 
-      - name: Deploy changed files
+      - name: Deploy changed files (if any)
+        if: success() && steps.changes.outputs != ''
         run: |
-          if [ -s changed-files.txt ]; then
-            echo "Deploying changed files..."
-            while read file; do
-              echo "Deploying $file"
-              sf project deploy start \
-                --source-dir "$file" \
-                --target-org QA \
-                --ignore-conflicts \
-                --wait 10
-            done < changed-files.txt
+          CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No deployable changes found. Skipping deploy."
           else
-            echo "No deployable changes found. Skipping deployment."
+            echo "Deploying: $CHANGED_FILES"
+            sf project deploy start \
+              --source-dir $CHANGED_FILES \
+              --target-org QA \
+              --ignore-conflicts \
+              --wait 10
           fi
