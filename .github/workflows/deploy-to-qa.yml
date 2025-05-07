@@ -6,12 +6,14 @@ on:
 
 jobs:
   deploy-to-qa:
-    name: Deploy to Salesforce QA
+    name: Deploy Changed Metadata Only
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout code (last 2 commits only)
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
       - name: Install Salesforce CLI
         run: |
@@ -39,10 +41,24 @@ jobs:
               --setalias QA
           fi
 
-      - name: Deploy to Salesforce (no tests)
+      - name: Detect changed metadata files
+        id: changes
         run: |
-          sf project deploy start \
-            --source-dir force-app \
-            --target-org QA \
-            --ignore-conflicts \
-            --wait 10
+          echo "Changed files:"
+          git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.txt || true
+          cat changed-files.txt
+
+      - name: Deploy changed files (if any)
+        if: success() && steps.changes.outputs != ''
+        run: |
+          CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No deployable changes found. Skipping deploy."
+          else
+            echo "Deploying: $CHANGED_FILES"
+            sf project deploy start \
+              --source-dir $CHANGED_FILES \
+              --target-org QA \
+              --ignore-conflicts \
+              --wait 10
+          fi
