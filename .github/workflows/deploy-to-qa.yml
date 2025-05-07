@@ -41,24 +41,47 @@ jobs:
               --setalias QA
           fi
 
-      - name: Detect changed metadata files
+      - name: Detect changed component folders
         id: changes
         run: |
-          echo "Changed files:"
-          git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.txt || true
-          cat changed-files.txt
+          echo "Changed folders:"
+          git diff --name-only HEAD^ HEAD | grep "^force-app" | cut -d'/' -f1-5 | sort -u > changed-folders.txt || true
+          cat changed-folders.txt
 
-      - name: Deploy changed files (if any)
-        if: success() && steps.changes.outputs != ''
+      - name: Deploy changed components
         run: |
-          CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No deployable changes found. Skipping deploy."
+          if [ -s changed-folders.txt ]; then
+            echo "Deploying changed folders..."
+            while read folder; do
+              echo "Deploying $folder"
+              sf project deploy start \
+                --source-dir "$folder" \
+                --target-org QA \
+                --ignore-conflicts \
+                --wait 10
+            done < changed-folders.txt
           else
-            echo "Deploying: $CHANGED_FILES"
-            sf project deploy start \
-              --source-dir $CHANGED_FILES \
-              --target-org QA \
-              --ignore-conflicts \
-              --wait 10
+            echo "No deployable changes found. Skipping deployment."
           fi
+
+  # - name: Detect changed metadata files
+  #   id: changes
+  #   run: |
+  #     echo "Changed files:"
+  #     git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.txt || true
+  #     cat changed-files.txt
+
+  # - name: Deploy changed files (if any)
+  #   if: success() && steps.changes.outputs != ''
+  #   run: |
+  #     CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
+  #     if [ -z "$CHANGED_FILES" ]; then
+  #       echo "No deployable changes found. Skipping deploy."
+  #     else
+  #       echo "Deploying: $CHANGED_FILES"
+  #       sf project deploy start \
+  #         --source-dir $CHANGED_FILES \
+  #         --target-org QA \
+  #         --ignore-conflicts \
+  #         --wait 10
+  #     fi
