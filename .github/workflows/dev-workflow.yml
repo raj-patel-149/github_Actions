@@ -89,16 +89,17 @@ jobs:
           cat changed-files.txt
 
       - name: Deploy changed files
-        if: success() && steps.changes.outputs != ''
         run: |
-          CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No deployable changes found. Skipping deploy."
+          if [ -s changed-files.txt ]; then
+            echo "Deploying changed files..."
+            while read file; do
+              echo "Deploying $file"
+              sf project deploy start \
+                --source-dir "$file" \
+                --target-org QA \
+                --ignore-conflicts \
+                --wait 10
+            done < changed-files.txt
           else
-            echo "Deploying: $CHANGED_FILES"
-            sf project deploy start \
-              --source-dir $CHANGED_FILES \
-              --target-org QA \
-              --ignore-conflicts \
-              --wait 10
+            echo "No deployable changes found. Skipping deployment."
           fi
