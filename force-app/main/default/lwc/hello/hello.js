@@ -1,5 +1,5 @@
 import { LightningElement } from "lwc";
 
 export default class Hello extends LightningElement {
-  name = "Hello World i am raj";
+  name = "Hello World i am raj patel";
 }
