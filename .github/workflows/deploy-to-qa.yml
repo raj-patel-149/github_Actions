@@ -65,90 +65,78 @@ jobs:
                 --wait 10
             done < changed-folders.txt
 
+            # Intentional dummy command to simulate failure
+            exit 1  # Remove or comment this after testing rollback
+
           else
             echo "No deployable changes found. Skipping deployment."
           fi
 
-      # - name: Rollback commit by opening a PR if deployment fails
-      #   if: failure()
-      #   run: |
-      #     echo "Deployment failed, creating rollback branch and PR..."
+      - name: Rollback commit by opening a PR if deployment fails
+        if: failure()
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          echo "Deployment failed, creating rollback branch and PR..."
 
-      #     git config --global user.name "raj-patel-149"
-      #     git config --global user.email "rdpatel11124@gmail.com"
+          git config --global user.name "raj-patel-149"
+          git config --global user.email "rdpatel11124@gmail.com"
 
-      #     ROLLBACK_BRANCH="rollback-$(date +%s)"
-      #     git checkout -b "$ROLLBACK_BRANCH" HEAD^
+          ROLLBACK_BRANCH="rollback-$(date +%s)"
+          git checkout -b "$ROLLBACK_BRANCH" HEAD^
 
-      #     git push origin "$ROLLBACK_BRANCH"
+          # Authenticate with PAT
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
+          git push origin "$ROLLBACK_BRANCH"
 
-      #     echo "Installing GitHub CLI..."
-      #     curl -sSL https://cli.github.com/install.sh | sh
-      #     export PATH=$PATH:/usr/local/bin
-      #     gh --version
+          echo "Installing GitHub CLI..."
+          curl -sSL https://cli.github.com/install.sh | sh
+          export PATH=$PATH:/usr/local/bin
+          gh --version
 
-      #     echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          echo "${GH_PAT}" | gh auth login --with-token
 
-      #     gh pr create \
-      #       --title "🔁 Rollback: Failed deployment from main" \
-      #       --body "This PR reverts the latest commit on \`main\` due to a failed Salesforcedeployment." \
-      #       --base main \
-      #       --head "$ROLLBACK_BRANCH"
+          PR_URL=$(gh pr create \
+            --title "🔁 Rollback: Failed deployment from main" \
+            --body "This PR reverts the latest commit on \`main\` due to a failed Salesforcedeployment." \
+            --base main \
+            --head "$ROLLBACK_BRANCH")
 
-      # - name: Send rollback notification email
-      #   if: failure()
-      #   env:
-      #     SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-      #     SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      #     EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      #     EMAIL_TO: ${{ secrets.EMAIL_TO }}
-      #     EMAIL_USER: ${{ secrets.EMAIL_USER }}
-      #     EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-      #     GITHUB_REPO: ${{ github.repository }}
-      #     GITHUB_SHA: ${{ github.sha }}
-      #   run: |
-      #     echo "Downloading mailsend-go..."
-      #     curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.0.6/mailsend-go-linux-amd64.tar.gz
-      #     tar -xzf mailsend-go.tar.gz
-      #     chmod +x mailsend-go/mailsend-go
+          echo "Rollback PR created at: $PR_URL"
 
-      #     PR_URL="${{ steps.rollback_pr.outputs.pr_url || 'Rollback PR URL not available' }}"
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
-      #     MESSAGE="🚨 Salesforce deployment to QA failed for commit: https://github.com/$GITHUB_REPO/commit/$GITHUB_SHA
+      - name: Send rollback notification email
+        if: failure()
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          PR_URL: ${{ env.PR_URL }}
+        run: |
+          echo "Downloading mailsend-go..."
+          curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64.tar.gz
+          tar -xzf mailsend-go.tar.gz
+          chmod +x mailsend-go/mailsend-go
 
-      #     A rollback PR has been created: $PR_URL
+          MESSAGE="🚨 Salesforce deployment to QA failed for commit: https://github.com/$GITHUB_REPOcommit/$GITHUB_SHA
 
-      #     Please review and merge the rollback as needed."
+          A rollback PR has been created: $PR_URL
 
-      #     ./mailsend-go/mailsend-go \
-      #       -smtp "$SMTP_SERVER" \
-      #       -port "$SMTP_PORT" \
-      #       -auth \
-      #       -user "$EMAIL_USER" \
-      #       -pass "$EMAIL_PASS" \
-      #       -from "$EMAIL_FROM" \
-      #       -to "$EMAIL_TO" \
-      #       -sub "❌ Salesforce Deployment Failed – Rollback PR Created" \
-      #       -M "$MESSAGE"
+          Please review and merge the rollback as needed."
 
-  # - name: Detect changed metadata files
-  #   id: changes
-  #   run: |
-  #     echo "Changed files:"
-  #     git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.txt || true
-  #     cat changed-files.txt
-
-  # - name: Deploy changed files (if any)
-  #   if: success() && steps.changes.outputs != ''
-  #   run: |
-  #     CHANGED_FILES=$(cat changed-files.txt | tr '\n' ',' | sed 's/,$//')
-  #     if [ -z "$CHANGED_FILES" ]; then
-  #       echo "No deployable changes found. Skipping deploy."
-  #     else
-  #       echo "Deploying: $CHANGED_FILES"
-  #       sf project deploy start \
-  #         --source-dir $CHANGED_FILES \
-  #         --target-org QA \
-  #         --ignore-conflicts \
-  #         --wait 10
-  #     fi
+          ./mailsend-go/mailsend-go \
+            -smtp "$SMTP_SERVER" \
+            -port "$SMTP_PORT" \
+            -auth \
+            -user "$EMAIL_USER" \
+            -pass "$EMAIL_PASS" \
+            -from "$EMAIL_FROM" \
+            -to "$EMAIL_TO" \
+            -sub "❌ Salesforce Deployment Failed – Rollback PR Created" \
+            -M "$MESSAGE"
