@@ -81,29 +81,25 @@ jobs:
               --setalias QA
           fi
 
-      - name: Detect changed files
+      - name: Detect changed component folders
         id: changes
         run: |
-          git diff --name-only HEAD^ HEAD | grep "^force-app" > changed-files.     true
-          CHANGED_FILES=$(cat changed-files.txt | xargs)
-          echo "Changed files: $CHANGED_FILES"
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "Changed folders:"
+          git diff --name-only HEAD^ HEAD | grep "^force-app" | cut -d'/' -f1-5 | sort -u > changed-folders.txt || true
+          cat changed-folders.txt
 
-      - name: Copy changed files to temp deploy folder
-        if: steps.changes.outputs.changed_files != ''
+      - name: Deploy changed components
         run: |
-          mkdir -p changed
-          while read file; do
-            mkdir -p "changed/$(dirname "$file")"
-            cp "$file" "changed/$file"
-          done < changed-files.txt
-
-      - name: Deploy changed files
-        if: steps.changes.outputs.changed_files != ''
-        run: |
-          echo "Deploying changed files..."
-          sf project deploy start \
-            --source-dir changed/force-app \
-            --target-org QA \
-            --ignore-conflicts \
-            --wait 10
+          if [ -s changed-folders.txt ]; then
+            echo "Deploying changed folders..."
+            while read folder; do
+              echo "Deploying $folder"
+              sf project deploy start \
+                --source-dir "$folder" \
+                --target-org QA \
+                --ignore-conflicts \
+                --wait 10
+            done < changed-folders.txt
+          else
+            echo "No deployable changes found. Skipping deployment."
+          fi
