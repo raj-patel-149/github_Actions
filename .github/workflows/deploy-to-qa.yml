@@ -85,9 +85,7 @@ jobs:
           ROLLBACK_BRANCH="rollback-$(date +%s)"
           git checkout -b "$ROLLBACK_BRANCH" HEAD^
 
-          # Authenticate with PAT
-          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
-          git push origin "$ROLLBACK_BRANCH"
+          git push https://x-access-token:$GH_PAT@github.com/${{ github.repository }} "$ROLLBACK_BRANCH"
 
           echo "Installing GitHub CLI..."
           curl -sSL https://cli.github.com/install.sh | sh
@@ -96,15 +94,11 @@ jobs:
 
           echo "${GH_PAT}" | gh auth login --with-token
 
-          PR_URL=$(gh pr create \
+          gh pr create \
             --title "🔁 Rollback: Failed deployment from main" \
-            --body "This PR reverts the latest commit on \`main\` due to a failed Salesforcedeployment." \
+            --body "This PR reverts the latest commit on \`main\` due to a failed Salesforce deployment." \
             --base main \
-            --head "$ROLLBACK_BRANCH")
-
-          echo "Rollback PR created at: $PR_URL"
-
-          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+            --head "$ROLLBACK_BRANCH"
 
       - name: Send rollback notification email
         if: failure()
@@ -117,7 +111,7 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
-          PR_URL: ${{ env.PR_URL }}
+
         run: |
           echo "Downloading mailsend-go..."
           curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64.tar.gz
@@ -126,7 +120,7 @@ jobs:
 
           MESSAGE="🚨 Salesforce deployment to QA failed for commit: https://github.com/$GITHUB_REPOcommit/$GITHUB_SHA
 
-          A rollback PR has been created: $PR_URL
+
 
           Please review and merge the rollback as needed."
 
