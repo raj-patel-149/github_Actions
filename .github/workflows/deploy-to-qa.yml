@@ -75,102 +75,102 @@ jobs:
             echo "No deployable changes found. Skipping deployment."
           fi
 
-  auto-merge:
-    name: Auto Merge PR After Deploy Success
-    needs: deploy-to-qa
-    runs-on: ubuntu-latest
-    steps:
-      - name: Auto-merge PR
-        run: gh pr merge ${{ github.event.pull_request.number }} --squash --admin
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # auto-merge:
+  #   name: Auto Merge PR After Deploy Success
+  #   needs: deploy-to-qa
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Auto-merge PR
+  #       run: gh pr merge ${{ github.event.pull_request.number }} --squash --admin
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Rollback commit by opening a PR if deployment fails
-      #   if: failure()
-      #   env:
-      #     GH_PAT: ${{ secrets.GH_PAT }}
-      #   run: |
-      #     echo "Deployment failed, creating rollback branch and PR..."
+  #     # - name: Rollback commit by opening a PR if deployment fails
+  #     #   if: failure()
+  #     #   env:
+  #     #     GH_PAT: ${{ secrets.GH_PAT }}
+  #     #   run: |
+  #     #     echo "Deployment failed, creating rollback branch and PR..."
 
-      #     git config --global user.name "raj-patel-149"
-      #     git config --global user.email "rdpatel11124@gmail.com"
+  #     #     git config --global user.name "raj-patel-149"
+  #     #     git config --global user.email "rdpatel11124@gmail.com"
 
-      #     ROLLBACK_BRANCH="rollback-$(date +%s)"
-      #     git checkout -b "$ROLLBACK_BRANCH" HEAD^
+  #     #     ROLLBACK_BRANCH="rollback-$(date +%s)"
+  #     #     git checkout -b "$ROLLBACK_BRANCH" HEAD^
 
-      #     git push https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}"$ROLLBACK_BRANCH"
+  #     #     git push https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}"$ROLLBACK_BRANCH"
 
-      #     echo "Installing GitHub CLI..."
-      #     curl -sSL https://cli.github.com/install.sh | sh
-      #     export PATH=$PATH:/usr/local/bin
-      #     gh --version
+  #     #     echo "Installing GitHub CLI..."
+  #     #     curl -sSL https://cli.github.com/install.sh | sh
+  #     #     export PATH=$PATH:/usr/local/bin
+  #     #     gh --version
 
-      #     echo "$GH_PAT" | gh auth login --with-token
+  #     #     echo "$GH_PAT" | gh auth login --with-token
 
-      #     gh pr create \
-      #       --title "🔁 Rollback: Failed deployment from main" \
-      #       --body "This PR reverts the latest commit on \`main\` due to a failed Salesforcedeployment." \
-      #       --base main \
-      #       --head "$ROLLBACK_BRANCH"
+  #     #     gh pr create \
+  #     #       --title "🔁 Rollback: Failed deployment from main" \
+  #     #       --body "This PR reverts the latest commit on \`main\` due to a failed Salesforcedeployment." \
+  #     #       --base main \
+  #     #       --head "$ROLLBACK_BRANCH"
 
-      # - name: Rollback commit by opening a PR if deployment fails
-      #   if: failure()
-      #   env:
-      #     GH_PAT: ${{ secrets.GH_PAT }}
-      #   run: |
-      #     echo "Deployment failed, creating rollback branch and PR..."
-      #     echo "${GH_PAT}"
+  #     # - name: Rollback commit by opening a PR if deployment fails
+  #     #   if: failure()
+  #     #   env:
+  #     #     GH_PAT: ${{ secrets.GH_PAT }}
+  #     #   run: |
+  #     #     echo "Deployment failed, creating rollback branch and PR..."
+  #     #     echo "${GH_PAT}"
 
-      #     git config --global user.name "raj-patel-149"
-      #     git config --global user.email "rdpatel11124@gmail.com"
+  #     #     git config --global user.name "raj-patel-149"
+  #     #     git config --global user.email "rdpatel11124@gmail.com"
 
-      #     ROLLBACK_BRANCH="rollback-$(date +%s)"
-      #     git checkout -b "$ROLLBACK_BRANCH" HEAD^
+  #     #     ROLLBACK_BRANCH="rollback-$(date +%s)"
+  #     #     git checkout -b "$ROLLBACK_BRANCH" HEAD^
 
-      #     git push https://x-access-token:$GH_PAT@github.com/${{ github.repository }} "$ROLLBACK_BRANCH"
+  #     #     git push https://x-access-token:$GH_PAT@github.com/${{ github.repository }} "$ROLLBACK_BRANCH"
 
-      #     echo "Installing GitHub CLI..."
-      #     curl -sSL https://cli.github.com/install.sh | sh
-      #     export PATH=$PATH:/usr/local/bin
-      #     gh --version
+  #     #     echo "Installing GitHub CLI..."
+  #     #     curl -sSL https://cli.github.com/install.sh | sh
+  #     #     export PATH=$PATH:/usr/local/bin
+  #     #     gh --version
 
-      #     echo "${GH_PAT}" | gh auth login --with-token
+  #     #     echo "${GH_PAT}" | gh auth login --with-token
 
-      #     gh pr create \
-      #       --title "🔁 Rollback: Failed deployment from main" \
-      #       --body "This PR reverts the latest commit on \`main\` due to a failed Salesforce deployment." \
-      #       --base main \
-      #       --head "$ROLLBACK_BRANCH"
+  #     #     gh pr create \
+  #     #       --title "🔁 Rollback: Failed deployment from main" \
+  #     #       --body "This PR reverts the latest commit on \`main\` due to a failed Salesforce deployment." \
+  #     #       --base main \
+  #     #       --head "$ROLLBACK_BRANCH"
 
-      # - name: Send rollback notification email
-      #   if: failure()
-      #   env:
-      #     SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-      #     SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      #     EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      #     EMAIL_TO: ${{ secrets.EMAIL_TO }}
-      #     EMAIL_USER: ${{ secrets.EMAIL_USER }}
-      #     EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-      #     GITHUB_REPO: ${{ github.repository }}
-      #     GITHUB_SHA: ${{ github.sha }}
+  #     # - name: Send rollback notification email
+  #     #   if: failure()
+  #     #   env:
+  #     #     SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+  #     #     SMTP_PORT: ${{ secrets.SMTP_PORT }}
+  #     #     EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+  #     #     EMAIL_TO: ${{ secrets.EMAIL_TO }}
+  #     #     EMAIL_USER: ${{ secrets.EMAIL_USER }}
+  #     #     EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+  #     #     GITHUB_REPO: ${{ github.repository }}
+  #     #     GITHUB_SHA: ${{ github.sha }}
 
-      #   run: |
-      #     echo "Downloading mailsend-go..."
-      #     curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64.tar.gz
-      #     tar -xzf mailsend-go.tar.gz
-      #     chmod +x mailsend-go/mailsend-go
+  #     #   run: |
+  #     #     echo "Downloading mailsend-go..."
+  #     #     curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64.tar.gz
+  #     #     tar -xzf mailsend-go.tar.gz
+  #     #     chmod +x mailsend-go/mailsend-go
 
-      #     MESSAGE="🚨 Salesforce deployment to QA failed for commit: https://github.com/$GITHUB_REPOcommit/$GITHUB_SHA
+  #     #     MESSAGE="🚨 Salesforce deployment to QA failed for commit: https://github.com/$GITHUB_REPOcommit/$GITHUB_SHA
 
-      #     Please review and merge the rollback as needed."
+  #     #     Please review and merge the rollback as needed."
 
-      #     ./mailsend-go/mailsend-go \
-      #       -smtp "$SMTP_SERVER" \
-      #       -port "$SMTP_PORT" \
-      #       -auth \
-      #       -user "$EMAIL_USER" \
-      #       -pass "$EMAIL_PASS" \
-      #       -from "$EMAIL_FROM" \
-      #       -to "$EMAIL_TO" \
-      #       -sub "❌ Salesforce Deployment Failed – Rollback PR Created" \
-      #       -M "$MESSAGE"
+  #     #     ./mailsend-go/mailsend-go \
+  #     #       -smtp "$SMTP_SERVER" \
+  #     #       -port "$SMTP_PORT" \
+  #     #       -auth \
+  #     #       -user "$EMAIL_USER" \
+  #     #       -pass "$EMAIL_PASS" \
+  #     #       -from "$EMAIL_FROM" \
+  #     #       -to "$EMAIL_TO" \
+  #     #       -sub "❌ Salesforce Deployment Failed – Rollback PR Created" \
+  #     #       -M "$MESSAGE"
