@@ -1,4 +1,4 @@
-name: Salesforce CI/CD
+name: Code Quality Checks Salesforce
 
 on:
   pull_request:
