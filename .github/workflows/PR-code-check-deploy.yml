@@ -1,4 +1,4 @@
-name: Code Quality Checks
+name: PR to main
 
 on:
   pull_request:
