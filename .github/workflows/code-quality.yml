@@ -1,4 +1,4 @@
-name: Code Quality Checks Salesforce
+name: Code Quality Checks
 
 on:
   pull_request:

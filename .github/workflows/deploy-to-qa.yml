@@ -1,8 +1,12 @@
 name: Deploy to Salesforce QA
 
 on:
-  push:
-    branches: [main, dev]
+  workflow_run:
+    workflows: ["Code Quality Checks"]
+    types:
+      - completed
+  # push:
+  #   branches: [main, dev]
 
 # permissions:
 #   contents: write
@@ -12,6 +16,8 @@ jobs:
   deploy-to-qa:
     name: Deploy Changed Metadata Only
     runs-on: ubuntu-latest
+    environment:
+      name: deploy-qa
 
     steps:
       - name: Checkout code (last 2 commits only)
@@ -68,6 +74,16 @@ jobs:
           else
             echo "No deployable changes found. Skipping deployment."
           fi
+
+  auto-merge:
+    name: Auto Merge PR After Deploy Success
+    needs: deploy-to-qa
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-merge PR
+        run: gh pr merge ${{ github.event.pull_request.number }} --squash --admin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # - name: Rollback commit by opening a PR if deployment fails
       #   if: failure()
