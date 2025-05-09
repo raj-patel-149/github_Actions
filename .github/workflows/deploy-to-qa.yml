@@ -75,6 +75,42 @@ jobs:
             echo "No deployable changes found. Skipping deployment."
           fi
 
+      - name: Notify Deployment Status via Email
+        if: always()
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          echo "Downloading mailsend-go..."
+          curl -L -o mailsend-go.tar.gz https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64.tar.gz
+          tar -xzf mailsend-go.tar.gz
+          chmod +x mailsend-go/mailsend-go
+
+          if [ "${{ job.status }}" == "success" ]; then
+            SUBJECT="✅ Salesforce Deployment Succeeded"
+            MESSAGE="The deployment to QA for repository $GITHUB_REPO succeeded for commit: https://github.com/$GITHUB_REPO/commit/$GITHUB_SHA"
+          else
+            SUBJECT="❌ Salesforce Deployment Failed"
+            MESSAGE="The deployment to QA for repository $GITHUB_REPO failed for commit: https://github.com/$GITHUB_REPO/commit/$GITHUB_SHA"
+          fi
+
+          ./mailsend-go/mailsend-go \
+            -smtp "$SMTP_SERVER" \
+            -port "$SMTP_PORT" \
+            -auth \
+            -user "$EMAIL_USER" \
+            -pass "$EMAIL_PASS" \
+            -from "$EMAIL_FROM" \
+            -to "$EMAIL_TO" \
+            -sub "$SUBJECT" \
+            -M "$MESSAGE"
+
   # auto-merge:
   #   name: Auto Merge PR After Deploy Success
   #   needs: deploy-to-qa
