@@ -16,8 +16,6 @@ jobs:
   deploy-to-qa:
     name: Deploy Changed Metadata Only
     runs-on: ubuntu-latest
-    environment:
-      name: deploy-qa
 
     steps:
       - name: Checkout code (last 2 commits only)
