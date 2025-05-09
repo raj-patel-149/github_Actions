@@ -75,29 +75,24 @@ jobs:
             echo "No deployable changes found. Skipping deployment."
           fi
 
-  # send-notification:
-  #   name: Send Deployment Notification
-  #   needs: deploy-to-qa
-  #   runs-on: ubuntu-latest
-  #   if: always() # Run this job even if the previous one fails
-
-  #   steps:
-  #     - name: Send deployment notification email
-  #       uses: hilarion5/send-mail@v1
-  #       with:
-  #         smtp-server: smtp.example.com
-  #         smtp-port: 465
-  #         smtp-secure: true
-  #         from-email: sender@example.com
-  #         to-email: recipient1@example.com,recipient2@example.com
-  #         username: yourusername
-  #         password: yourpassword
-  #         subject: Test Email
-  #         body: This is a test email sent from GitHub Actions.
-  #         html: |
-  #           <h1>This is a test email</h1>
-  #           <p>Test Paragraph</p>
-
+      - name: Send mail
+        if: always()
+        uses: dawidd6/action-send-mail@v2
+        with:
+          # mail server settings
+          server_address: smtp.gmail.com
+          server_port: 465
+          # user credentials
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          # email subject
+          subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}
+          # email body as text
+          body: ${{ github.job }} job in worflow ${{ github.workflow }} of ${{ github.repository }} has ${{ job.status }}
+          # comma-separated string, send email to
+          to: rdpatel11124@gmail.com
+          # from email name
+          from: Raj Patel
   # auto-merge:
   #   name: Auto Merge PR After Deploy Success
   #   needs: deploy-to-qa
