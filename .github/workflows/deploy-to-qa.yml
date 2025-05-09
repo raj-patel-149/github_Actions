@@ -1,12 +1,10 @@
 name: Deploy to Salesforce QA
 
 on:
-  push:
-    branches: [main, dev]
-  # workflow_run:
-  #   workflows: ["Code Quality Checks"]
-  #   types:
-  #     - completed
+  workflow_run:
+    workflows: ["Code Quality Checks"]
+    types:
+      - completed
   # push:
   #   branches: [main, dev]
 
