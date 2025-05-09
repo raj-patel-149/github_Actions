@@ -75,40 +75,28 @@ jobs:
             echo "No deployable changes found. Skipping deployment."
           fi
 
-      # - name: Notify Deployment Status via Email
-      #   if: always()
-      #   env:
-      #     SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-      #     SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      #     EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      #     EMAIL_TO: ${{ secrets.EMAIL_TO }}
-      #     EMAIL_USER: ${{ secrets.EMAIL_USER }}
-      #     EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-      #     GITHUB_REPO: ${{ github.repository }}
-      #     GITHUB_SHA: ${{ github.sha }}
-      #   run: |
-      #     echo "Downloading mailsend-go..."
-      #     curl -L -o mailsend-go https://github.com/muquit/mailsend-go/releases/download/v1.06/mailsend-go-linux-amd64
-      #     chmod +x mailsend-go
+  # send-notification:
+  #   name: Send Deployment Notification
+  #   needs: deploy-to-qa
+  #   runs-on: ubuntu-latest
+  #   if: always() # Run this job even if the previous one fails
 
-      #     if [ "${{ job.status }}" == "success" ]; then
-      #       SUBJECT="✅ Salesforce Deployment Succeeded"
-      #       MESSAGE="The deployment to QA for repository $GITHUB_REPO succeeded for commit: https://github.com/$GITHUB_REPO/commit/$GITHUB_SHA"
-      #     else
-      #       SUBJECT="❌ Salesforce Deployment Failed"
-      #       MESSAGE="The deployment to QA for repository $GITHUB_REPO failed for commit: https://github.com/$GITHUB_REPO/commit/$GITHUB_SHA"
-      #     fi
-
-      #     ./mailsend-go/mailsend-go \
-      #       -smtp "$SMTP_SERVER" \
-      #       -port "$SMTP_PORT" \
-      #       -auth \
-      #       -user "$EMAIL_USER" \
-      #       -pass "$EMAIL_PASS" \
-      #       -from "$EMAIL_FROM" \
-      #       -to "$EMAIL_TO" \
-      #       -sub "$SUBJECT" \
-      #       -M "$MESSAGE"
+  #   steps:
+  #     - name: Send deployment notification email
+  #       uses: hilarion5/send-mail@v1
+  #       with:
+  #         smtp-server: smtp.example.com
+  #         smtp-port: 465
+  #         smtp-secure: true
+  #         from-email: sender@example.com
+  #         to-email: recipient1@example.com,recipient2@example.com
+  #         username: yourusername
+  #         password: yourpassword
+  #         subject: Test Email
+  #         body: This is a test email sent from GitHub Actions.
+  #         html: |
+  #           <h1>This is a test email</h1>
+  #           <p>Test Paragraph</p>
 
   # auto-merge:
   #   name: Auto Merge PR After Deploy Success
