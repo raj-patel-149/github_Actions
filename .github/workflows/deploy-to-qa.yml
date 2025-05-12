@@ -1,4 +1,4 @@
-name: Deploy to Salesforce QA
+name: Deploy to Salesforce
 
 on:
   push:
