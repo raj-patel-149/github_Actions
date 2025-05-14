@@ -25,25 +25,44 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Run ESLint
-        run: npx eslint .
+        run: |
+          echo "Running ESLint..."
+          if ! npx eslint .; then
+            echo "::error ::ESLint failed. Please fix lint errors."
+            exit 1
+          else
+            echo "✅ ESLint passed"
+          fi
 
       - name: Run PMD for Apex
         run: |
+          echo "Running PMD..."
           wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
           unzip pmd-bin-6.55.0.zip
-          ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R category/apex/design.xml -f text
+          if ! ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R category/apex/design.xml -f text; then
+            echo "::error ::PMD Apex static analysis failed."
+            exit 1
+          else
+            echo "✅ PMD passed"
+          fi
 
       - name: SonarQube Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          echo "Running SonarQube Scan..."
           npm install -g sonarqube-scanner
-          sonar-scanner \
+          if ! sonar-scanner \
             -Dsonar.projectKey=raj-patel-149_github_Actions \
             -Dsonar.organization=raj-patel-149 \
             -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${SONAR_TOKEN}
+            -Dsonar.token=${SONAR_TOKEN}; then
+            echo "::error ::SonarQube scan failed."
+            exit 1
+          else
+            echo "✅ SonarQube scan passed."
+          fi
 
   deploy-to-qa:
     name: Deploy to Salesforce QA
