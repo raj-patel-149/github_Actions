@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main, dev]
 
+permissions:
+  issues: write # Grant permission to post comments on issues/PRs
+  pull-requests: write
+
 jobs:
   ####################################
   # Job 1: Code Quality Checks
