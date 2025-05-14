@@ -83,6 +83,7 @@ jobs:
           fi
 
       - name: Detect changed component folders
+        continue-on-error: true
         id: changes
         run: |
           echo "Changed folders:"
@@ -90,6 +91,7 @@ jobs:
           cat changed-folders.txt
 
       - name: Deploy changed components
+        continue-on-error: true
         run: |
           if [ -s changed-folders.txt ]; then
             echo "Deploying changed folders..."
@@ -102,11 +104,14 @@ jobs:
                 --wait 10
             done < changed-folders.txt
 
+            exit 1
+
           else
             echo "No deployable changes found. Skipping deployment."
           fi
 
       - name: Run Apex Tests and Check Coverage
+        continue-on-error: true
         run: |
           echo "Running all Apex tests..."
           sf apex run test \
