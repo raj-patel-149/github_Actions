@@ -1,0 +1,334 @@
+# name: PR to main
+
+# on:
+#   pull_request:
+#     branches: [main, dev]
+
+# permissions:
+#   issues: write # Grant permission to post comments on issues/PRs
+#   pull-requests: write
+
+# jobs:
+#   ####################################
+#   # Job 1: Code Quality Checks
+#   ####################################
+#   code-checks:
+#     name: Code Quality Checks
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: 18
+
+#       - name: Install dependencies
+#         run: npm install --legacy-peer-deps
+
+#       - name: Run ESLint
+#         run: |
+#           echo "Running ESLint..."
+#           if ! npx eslint .; then
+#             echo "::error ::ESLint failed. Please fix lint errors."
+#             exit 1
+#           else
+#             echo "✅ ESLint passed"
+#           fi
+
+#       - name: Run PMD for Apex
+#         run: |
+#           echo "Running PMD..."
+#           wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
+#           unzip pmd-bin-6.55.0.zip
+#           if ! ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R category/apex/design.xml -f text; then
+#             echo "::error ::PMD Apex static analysis failed."
+#             exit 1
+#           else
+#             echo "✅ PMD passed"
+#           fi
+
+#       - name: SonarQube Scan
+#         env:
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#         run: |
+#           echo "Running SonarQube Scan..."
+#           npm install -g sonarqube-scanner
+#           if ! sonar-scanner \
+#             -Dsonar.projectKey=raj-patel-149_github_Actions \
+#             -Dsonar.organization=raj-patel-149 \
+#             -Dsonar.sources=. \
+#             -Dsonar.host.url=https://sonarcloud.io \
+#             -Dsonar.token=${SONAR_TOKEN}; then
+#             echo "::error ::SonarQube scan failed."
+#             exit 1
+#           else
+#             echo "✅ SonarQube scan passed."
+#           fi
+
+#   deploy-to-qa:
+#     name: Deploy to Salesforce QA
+#     runs-on: ubuntu-latest
+#     needs: code-checks
+
+#     steps:
+#       - name: Checkout code (last 2 commits only)
+#         uses: actions/checkout@v3
+#         with:
+#           fetch-depth: 2
+
+#       - name: Install Salesforce CLI
+#         run: |
+#           npm install --global @salesforce/cli
+#           sf --version || true
+
+#       - name: Create JWT Key File
+#         run: echo "${{ secrets.SF_JWT_KEY }}" > server.key
+
+#       - name: Authenticate to Salesforce
+#         run: |
+#           echo "Logging in with JWT..."
+#           if ! sf org login jwt \
+#             --client-id ${{ secrets.SF_CLIENT_ID }} \
+#             --jwt-key-file server.key \
+#             --username ${{ secrets.SF_USERNAME_QA }} \
+#             --alias QA \
+#             --instance-url https://login.salesforce.com; then
+#             echo "sf CLI failed, falling back to sfdx..."
+#             sfdx auth:jwt:grant \
+#               --clientid ${{ secrets.SF_CLIENT_ID }} \
+#               --jwtkeyfile server.key \
+#               --username ${{ secrets.SF_USERNAME_QA }} \
+#               --instanceurl https://login.salesforce.com \
+#               --setalias QA
+#           fi
+
+#       - name: Detect changed component folders
+#         continue-on-error: true
+#         id: changes
+#         run: |
+#           echo "Changed folders:"
+#           git diff --name-only HEAD^ HEAD | grep "^force-app" | cut -d'/' -f1-5 | sort -u > changed-folders.txt || true
+#           cat changed-folders.txt
+
+#       - name: Deploy changed components
+#         continue-on-error: true
+#         run: |
+#           if [ -s changed-folders.txt ]; then
+#             echo "Deploying changed folders..."
+#             while read folder; do
+#               echo "Deploying $folder"
+#               sf project deploy start \
+#                 --source-dir "$folder" \
+#                 --target-org QA \
+#                 --ignore-conflicts \
+#                 --wait 10
+#             done < changed-folders.txt
+
+#             exit 1
+
+#           else
+#             echo "No deployable changes found. Skipping deployment."
+#           fi
+
+#       - name: Run Apex Tests and Check Coverage
+#         continue-on-error: true
+#         run: |
+#           echo "Running all Apex tests..."
+#           sf apex run test \
+#             --target-org QA \
+#             --test-level RunLocalTests \
+#             --output-dir test-results \
+#             --result-format json \
+#             --wait 10
+
+#           echo "Extracting code coverage..."
+#           coverage=$(jq '[.result.coverage.coverage[].numLocationsCovered] | add / ([.result.coverage.coverage[].numLocations] | add) * 100' test-results/test-result.json)
+#           echo "Code Coverage: $coverage%"
+
+#           if (( $(echo "$coverage < 75" | bc -l) )); then
+#             echo "❌ Code coverage is below 75%. Failing the job."
+#             exit 1
+#           else
+#             echo "✅ Code coverage is 75% or higher."
+#           fi
+
+#       - name: Comment on Pull Request
+#         if: ${{ github.event_name == 'pull_request' }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           PR_NUMBER: ${{ github.event.pull_request.number }}
+#         run: |
+#           COMMENT="✅ Deployment to QA succeeded. Code coverage is 82%. All checks passed!"
+#           echo "Posting comment to PR #$PR_NUMBER"
+#           curl -s -H "Authorization: token $GITHUB_TOKEN" \
+#             -X POST \
+#             -d "{\"body\": \"$COMMENT\"}" \
+#             "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+
+# .github/workflows/pr-to-main.yml
+name: PR to main
+
+on:
+  pull_request:
+    branches: [main, dev, uat]
+
+jobs:
+  code-checks:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    outputs:
+      eslint_pass: ${{ steps.eslint.outcome == 'success' && 'true' || 'false' }}
+      pmd_pass: ${{ steps.pmd.outcome == 'success' && 'true' || 'false' }}
+      sonar_pass: ${{ steps.sonar.outcome == 'success' && 'true' || 'false' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        id: eslint
+        run: |
+          if npx eslint .; then
+            echo "ESLINT_PASS=true" >> $GITHUB_ENV
+          else
+            echo "ESLINT_PASS=false" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: Run PMD for Apex
+        id: pmd
+        run: |
+          wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
+          unzip pmd-bin-6.55.0.zip
+          if ./pmd-bin-6.55.0/bin/run.sh pmd -d force-app -R category/apex/design.xml -f text; then
+            echo "PMD_PASS=true" >> $GITHUB_ENV
+          else
+            echo "PMD_PASS=false" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: SonarQube Scan
+        id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          npm install -g sonarqube-scanner
+          if sonar-scanner \
+            -Dsonar.projectKey=raj-patel-149_github_Actions \
+            -Dsonar.organization=raj-patel-149 \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${SONAR_TOKEN}; then
+            echo "SONAR_PASS=true" >> $GITHUB_ENV
+          else
+            echo "SONAR_PASS=false" >> $GITHUB_ENV
+            exit 1
+          fi
+
+  deploy-to-qa:
+    name: Deploy to Salesforce QA
+    runs-on: ubuntu-latest
+    needs: code-checks
+    outputs:
+      deploy_pass: ${{ steps.deploy.outcome == 'success' && 'true' || 'false' }}
+      coverage_pass: ${{ steps.coverage.outcome == 'success' && 'true' || 'false' }}
+
+    steps:
+      - name: Checkout code (last 2 commits only)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli
+          sf --version || true
+
+      - name: Create JWT Key File
+        run: echo "${{ secrets.SF_JWT_KEY }}" > server.key
+
+      - name: Authenticate to Salesforce
+        run: |
+          echo "Logging in with JWT..."
+          if ! sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.SF_USERNAME_QA }} \
+            --alias QA \
+            --instance-url https://login.salesforce.com; then
+            echo "sf CLI failed, falling back to sfdx..."
+            sfdx auth:jwt:grant \
+              --clientid ${{ secrets.SF_CLIENT_ID }} \
+              --jwtkeyfile server.key \
+              --username ${{ secrets.SF_USERNAME_QA }} \
+              --instanceurl https://login.salesforce.com \
+              --setalias QA
+
+      - name: Detect changed component folders
+        id: detect
+        continue-on-error: true
+        run: |
+          git diff --name-only HEAD^ HEAD | grep "^force-app" | cut -d'/' -f1-5 | sort -u > changed-folders.txt || true
+
+      - name: Deploy changed components
+        id: deploy
+        continue-on-error: true
+        run: |
+          if [ -s changed-folders.txt ]; then
+            while read folder; do
+              sf project deploy start \
+                --source-dir "$folder" \
+                --target-org QA \
+                --ignore-conflicts \
+                --wait 10 || exit 1
+            done < changed-folders.txt
+            echo "DEPLOY_PASS=true" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_PASS=true" >> $GITHUB_ENV
+            echo "No deployable changes found."
+          fi
+
+      - name: Run Apex Tests and Check Coverage
+        id: apex
+        continue-on-error: true
+        run: |
+          sf apex run test \
+            --target-org QA \
+            --test-level RunLocalTests \
+            --output-dir test-results \
+            --result-format json \
+            --wait 10
+
+          coverage=$(jq '[.result.coverage.coverage[].numLocationsCovered] | add / ([.result.coverage.coverage[].numLocations] | add) * 100' test-results/test-result.json)
+          echo "Code Coverage: $coverage%"
+
+          if (( $(echo "$coverage < 75" | bc -l) )); then
+            echo "COVERAGE_PASS=false" >> $GITHUB_ENV
+            exit 1
+          else
+            echo "COVERAGE_PASS=true" >> $GITHUB_ENV
+          fi
+
+  post-comments:
+    needs: [code-checks, deploy-to-qa]
+    uses: ./.github/workflows/post-comment.yml
+    with:
+      message: |
+        ESLint: ${{ needs.code-checks.outputs.eslint_pass == 'true' && '✅ Passed' || '    Failed' }}
+        PMD: ${{ needs.code-checks.outputs.pmd_pass == 'true' && '✅ Passed' || '❌ Failed' }}
+        SonarQube: ${{ needs.code-checks.outputs.sonar_pass == 'true' && '✅ Passed' || '    Failed' }}
+        Deploy: ${{ needs.deploy-to-qa.outputs.deploy_pass == 'true' && '✅ Succeeded' || '    Failed' }}
+        Apex Coverage: ${{ needs.deploy-to-qa.outputs.coverage_pass == 'true' && '✅ Good' || '❌ Low (<75%)' }}
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
